@@ -39,18 +39,24 @@ int main(void)
     const int shipSpeed = 5;
 
     // Attacks
-    Position bolts[maxAttacks] = {0};
+    Position attacks[maxAttacks] = {0};
     int currentAttack = 0;
-    const int boltDamage = 25;
-    const int boltSize = 2;
-    const int boltSpeed = 10;
+    const int attackDamage = 25;
+    const int attackSize = 2;
+    const int attackSpeed = 10;
 
     // Chickens
     int chickenSize = 30;
+    const int chickenSpeed = 1;
+    const int chickenAttackSpeed = 2;
+    Chicken chickens[chickenCount] = {0};
+    int direction = 1;
+    Position chickenAttacks[maxAttacks] = {0};
+    int currentChickenAttack = 0;
+
     int currX = PADDING;
     int currY = 0;
     int rightBorderChicken = -1;
-    Chicken chickens[chickenCount] = {0};
     for(int i = 0; i < chickenCount; i++){
         chickens[i].Health = 100;
         chickens[i].x = currX;
@@ -62,9 +68,6 @@ int main(void)
             currY++;
         }
     }
-    const int chickenSpeed = 1;
-    int direction = -1;
-    bool flipDirection = false;
 
     InitWindow(screenWidth, screenHeight, "Lemke2 Invaders");
     Texture2D shipTex = LoadTexture("assets/spaceship.png");
@@ -85,7 +88,7 @@ int main(void)
         
         if (IsKeyPressed(KEY_SPACE)){
             if(currentAttack >= maxAttacks) currentAttack = 0;
-            bolts[currentAttack] = {x, y};
+            attacks[currentAttack] = {x, y};
             currentAttack++;
         }
 
@@ -98,7 +101,16 @@ int main(void)
         }
         
         for(int i = 0; i < maxAttacks; i++){
-            bolts[i].y -= boltSpeed;
+            attacks[i].y -= attackSpeed;
+            chickenAttacks[i].y += chickenAttackSpeed;
+        }
+
+        for(int i = 0; i < chickenCount; i++){
+            int x = GetRandomValue(1, 10000);
+            if(x == 500){
+                if(currentChickenAttack >= maxAttacks) currentChickenAttack = 0;
+                chickenAttacks[currentChickenAttack++] = {chickens[i].x, chickens[i].y};
+            }
         }
 
         BeginDrawing();
@@ -108,7 +120,8 @@ int main(void)
             DrawTextureEx(shipTex, (Vector2){(float)x - (shipWidth/2), (float)y - (shipHeight/2)}, 0.0f, 0.5f, WHITE);
 
             for (int i = 0; i < maxAttacks; i++){
-                DrawRectangle(bolts[i].x, bolts[i].y, boltSize, boltSize, RED);
+                DrawRectangle(attacks[i].x, attacks[i].y, attackSize, attackSize, RED);
+                DrawRectangle(chickenAttacks[i].x, chickenAttacks[i].y, attackSize, attackSize, RED);
             }
 
             for(int i = 0; i < chickenCount; i++){
