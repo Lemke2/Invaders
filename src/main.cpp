@@ -8,6 +8,14 @@ void drawFPS(){
     DrawText(fpsText, 0, 0, 20, RAYWHITE);
 }
 
+bool checkCollision(int x1, int y1, int size1, int x2, int y2, int size2){
+    bool collision = false;
+    if ((x1 < (x2 + size2) && (x1 + size1) > x2) && (y1 < (y2 + size2) && (y1 + size1) > y2))
+        collision = true;
+
+    return collision;
+}
+
 struct Position{
     int x;
     int y;
@@ -21,7 +29,6 @@ struct Chicken{
 
 int main(void)
 {   
-    // metadata
     const int screenWidth = 1200;
     const int screenHeight = 900;
     const int PADDING = 100;
@@ -30,7 +37,6 @@ int main(void)
     SetTargetFPS(144);
     bool victory = true;
 
-    // Spaceship
     int health = 100;
     int shipWidth = 75;
     int shipHeight = 60;
@@ -38,14 +44,12 @@ int main(void)
     int y = screenHeight - shipHeight;
     const int shipSpeed = 5;
 
-    // Attacks
     Position attacks[maxAttacks] = {0};
     int currentAttack = 0;
     const int attackDamage = 25;
     const int attackSize = 2;
     const int attackSpeed = 10;
 
-    // Chickens
     int chickenSize = 30;
     const int chickenSpeed = 1;
     const int chickenAttackSpeed = 2;
@@ -86,7 +90,7 @@ int main(void)
         if (y > screenHeight) y = screenHeight;
         if (y < 0) y = 0;
         
-        if (IsKeyPressed(KEY_SPACE)){
+        if (IsKeyDown(KEY_SPACE)){
             if(currentAttack >= maxAttacks) currentAttack = 0;
             attacks[currentAttack] = {x, y};
             currentAttack++;
@@ -101,6 +105,26 @@ int main(void)
         }
         
         for(int i = 0; i < maxAttacks; i++){
+            for(int j = 0; j < chickenCount; j++){
+                if(checkCollision(attacks[i].x, attacks[i].y, attackSize, chickens[j].x, chickens[j].y, chickenSize)){
+                    attacks[i].x = -100;
+                    attacks[i].y = -100;
+                    chickens[j].Health -=attackDamage;
+                    if(chickens[j].Health <= 0){
+                        chickens[j].x = -200;
+                        chickens[y].x = -200;
+                    }
+                    break;
+                }
+            }
+
+            if(checkCollision(x, y, shipHeight, chickenAttacks[i].x, chickenAttacks[i].y, attackSize)){
+                health-=10;
+                chickenAttacks[i].x = - 50;
+                chickenAttacks[i].y = -50;
+                printf("DAMAAGE TAKEN! CURRENT HEALTH: %d\n", health);
+            }
+
             attacks[i].y -= attackSpeed;
             chickenAttacks[i].y += chickenAttackSpeed;
         }
@@ -130,6 +154,10 @@ int main(void)
                     DrawRectangle(chickens[i].x, chickens[i].y, chickenSize, chickenSize, RED);
                 }
             }
+
+            DrawRectangle(0, screenHeight-20, ((health/100) * screenWidth), 20, RED);
+
+            if(health <= 0) DrawRectangle(screenHeight/2, screenWidth/2, 600, 200, RED);
 
             if(victory) DrawRectangle(screenHeight/2, screenWidth/2, 600, 200, BLUE);
             
