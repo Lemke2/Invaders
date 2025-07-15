@@ -79,6 +79,7 @@ int main(void)
         attacks[i].speed = attackSpeed;
         attacks[i].width = attackSize;
         attacks[i].height = attackSize;
+        attacks[i].x = -100;
     }
 
     // Chickens
@@ -121,6 +122,7 @@ int main(void)
         chickenAttacks[i].speed = 1;
         chickenAttacks[i].width = eggTex.width * 0.1f;
         chickenAttacks[i].height = eggTex.height * 0.1f;
+        chickenAttacks[i].x = -100;
     }
     int currentChickenAttack = 0;
 
@@ -137,12 +139,12 @@ int main(void)
 
         if (SHIP.x < 0) SHIP.x = 0;
         if (SHIP.x > screenWidth - SHIP.width) SHIP.x = screenWidth - SHIP.width;
-        if (SHIP.y > screenHeight - SHIP.height) SHIP.y = screenHeight - SHIP.height;
+        if (SHIP.y > screenHeight - (SHIP.height/2)) SHIP.y = screenHeight - (SHIP.height/2);
         if (SHIP.y < 0) SHIP.y = 0;
         
         if (IsKeyDown(KEY_SPACE)){
             if(currentAttack >= maxAttacks) currentAttack = 0;
-            attacks[currentAttack].x = SHIP.x;
+            attacks[currentAttack].x = SHIP.x + (shipWidth/2);
             attacks[currentAttack].y = SHIP.y;
 
             currentAttack++;
