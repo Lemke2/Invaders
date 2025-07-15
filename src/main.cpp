@@ -165,8 +165,7 @@ int main(void)
                     attacks[i].y = -100;
                     chickens[j].health -= attacks[i].damage;
                     if(chickens[j].health <= 0){
-                        chickens[j].x = -200;
-                        chickens[j].y = -200;
+                        chickens[j].y = screenHeight + 200;
                     }
                     break;
                 }
@@ -184,13 +183,16 @@ int main(void)
             chickenAttacks[i].y += chickenAttacks[i].speed;
         }
 
+        // Generate chicken attacks
         for(int i = 0; i < chickenCount; i++){
-            int x = GetRandomValue(1, 10000);
-            if(x == 500){
-                if(currentChickenAttack >= maxAttacks) currentChickenAttack = 0;
-                chickenAttacks[currentChickenAttack].x = chickens[i].x;
-                chickenAttacks[currentChickenAttack].y = chickens[i].y;
-                currentChickenAttack++;
+            if(chickens[i].health > 0){
+                int x = GetRandomValue(1, 10000);
+                if(x == 500){
+                    if(currentChickenAttack >= maxAttacks) currentChickenAttack = 0;
+                    chickenAttacks[currentChickenAttack].x = chickens[i].x;
+                    chickenAttacks[currentChickenAttack].y = chickens[i].y;
+                    currentChickenAttack++;
+                }
             }
         }
 
