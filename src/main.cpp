@@ -8,64 +8,102 @@ void drawFPS(){
     DrawText(fpsText, 0, 0, 20, RAYWHITE);
 }
 
-bool checkCollision(int x1, int y1, int size1, int x2, int y2, int size2){
-    bool collision = false;
-    if ((x1 < (x2 + size2) && (x1 + size1) > x2) && (y1 < (y2 + size2) && (y1 + size1) > y2))
-        collision = true;
-
-    return collision;
+bool checkCollision(int x1, int y1, float width1, float height1, int x2, int y2, float width2, float height2){
+    return 
+    (x1 < x2 + width2) && 
+    (x1 + width1 > x2) && 
+    (y1 < y2 + height2) && 
+    (y1 + height1 > y2);
 }
 
-struct Position{
-    int x;
-    int y;
+struct Attack{
+    Texture2D texture;
+    float scale;
+    float x;
+    float y;
+    int damage;
+    int speed;
+    float width;
+    float height;
 };
 
-struct Chicken{
-    int x;
-    int y;
-    int Health;
+struct GameObject{
+    int health;
+    Texture2D texture;
+    float scale;
+    float x;
+    float y;
+    float width;
+    float height;
+    int speed;
 };
 
 int main(void)
 {   
+    // Metadata
     const int screenWidth = 1200;
     const int screenHeight = 900;
     const int PADDING = 100;
     const int maxAttacks = 100;
-    const int chickenCount = 300;
+    const int chickenCount = 150;
     SetTargetFPS(144);
     bool victory = true;
 
-    int health = 100;
-    int shipWidth = 75;
-    int shipHeight = 60;
-    int x = screenWidth/2;
-    int y = screenHeight - shipHeight;
-    const int shipSpeed = 5;
+    InitWindow(screenWidth, screenHeight, "Lemke2 Invaders");
 
-    Position attacks[maxAttacks] = {0};
-    int currentAttack = 0;
+    // Ship
+    const Texture2D shipTex = LoadTexture("assets/spaceship.png");
+    const float shipScale = 0.5f;
+    const float shipWidth = shipTex.width * shipScale;
+    const float shipHeight = shipTex.height * shipScale;
+    GameObject SHIP = {
+        .health = 100,
+        .texture = shipTex, 
+        .scale = shipScale,
+        .x = screenWidth/2, 
+        .y = screenHeight - shipHeight, 
+        .width = shipWidth,
+        .height = shipHeight, 
+        .speed = 5
+    };
+
+    // Attacks
+    Attack attacks[maxAttacks] = {0};
     const int attackDamage = 25;
     const int attackSize = 2;
     const int attackSpeed = 10;
+    int currentAttack = 0;
+    for (int i = 0; i < maxAttacks; i++) {
+        attacks[i].scale = 1.0f;
+        attacks[i].damage = attackDamage;
+        attacks[i].speed = attackSpeed;
+        attacks[i].width = attackSize;
+        attacks[i].height = attackSize;
+    }
 
-    int chickenSize = 30;
+    // Chickens
+    const Texture2D chickenTex = LoadTexture("assets/chicken.png");
+    GameObject chickens[chickenCount] = {0};
+    const float chickenScale = 0.1f;
+    const float chickenWidth = chickenTex.width * chickenScale;
+    const float chickenHeight = chickenTex.height * chickenScale;
     const int chickenSpeed = 1;
-    const int chickenAttackSpeed = 2;
-    Chicken chickens[chickenCount] = {0};
     int direction = 1;
-    Position chickenAttacks[maxAttacks] = {0};
-    int currentChickenAttack = 0;
 
     int currX = PADDING;
     int currY = 0;
     int rightBorderChicken = -1;
     for(int i = 0; i < chickenCount; i++){
-        chickens[i].Health = 100;
+        chickens[i].texture = chickenTex;
+        chickens[i].scale = chickenScale;
+        chickens[i].width = chickenWidth;
+        chickens[i].height = chickenHeight;
+        chickens[i].health = 100;
         chickens[i].x = currX;
-        chickens[i].y = chickenSize * currY;
-        currX += chickenSize;
+        chickens[i].y = chickenHeight * currY;
+        chickens[i].speed = chickenSpeed;
+        
+        currX += chickens[i].width;
         if(currX >= screenWidth - PADDING){
             rightBorderChicken = i;
             currX = PADDING;
@@ -73,67 +111,86 @@ int main(void)
         }
     }
 
-    InitWindow(screenWidth, screenHeight, "Lemke2 Invaders");
-    Texture2D shipTex = LoadTexture("assets/spaceship.png");
+    // Chicken attacks
+    const Texture2D eggTex = LoadTexture("assets/egg.png");
+    Attack chickenAttacks[maxAttacks] = {0};
+    for (int i = 0; i < maxAttacks; i++) {
+        chickenAttacks[i].texture = eggTex;
+        chickenAttacks[i].scale = 0.1f;
+        chickenAttacks[i].damage = 10;
+        chickenAttacks[i].speed = 1;
+        chickenAttacks[i].width = eggTex.width * 0.1f;
+        chickenAttacks[i].height = eggTex.height * 0.1f;
+    }
+    int currentChickenAttack = 0;
 
+    // Game loop
     while (!WindowShouldClose())
     {
         victory = true;
 
-        if (IsKeyDown(KEY_LEFT)) x -= shipSpeed;
-        if (IsKeyDown(KEY_RIGHT)) x += shipSpeed;
-        if (IsKeyDown(KEY_DOWN)) y += shipSpeed;
-        if (IsKeyDown(KEY_UP)) y -= shipSpeed;
+        // Move ship
+        if (IsKeyDown(KEY_LEFT)) SHIP.x -= SHIP.speed;
+        if (IsKeyDown(KEY_RIGHT)) SHIP.x += SHIP.speed;
+        if (IsKeyDown(KEY_DOWN)) SHIP.y += SHIP.speed;
+        if (IsKeyDown(KEY_UP)) SHIP.y -= SHIP.speed;
 
-        if (x < 0) x = 0;
-        if (x > screenWidth) x = screenWidth;
-        if (y > screenHeight) y = screenHeight;
-        if (y < 0) y = 0;
+        if (SHIP.x < 0) SHIP.x = 0;
+        if (SHIP.x > screenWidth - SHIP.width) SHIP.x = screenWidth - SHIP.width;
+        if (SHIP.y > screenHeight - SHIP.height) SHIP.y = screenHeight - SHIP.height;
+        if (SHIP.y < 0) SHIP.y = 0;
         
         if (IsKeyDown(KEY_SPACE)){
             if(currentAttack >= maxAttacks) currentAttack = 0;
-            attacks[currentAttack] = {x, y};
+            attacks[currentAttack].x = SHIP.x;
+            attacks[currentAttack].y = SHIP.y;
+
             currentAttack++;
         }
 
-        if(chickens[0].x <= chickenSize || chickens[rightBorderChicken].x >= screenWidth - chickenSize){
+        // Move chickens
+        if(chickens[0].x <= chickenWidth || chickens[rightBorderChicken].x >= screenWidth - chickenWidth){
             direction*=-1;
         }
-
         for(int i = 0; i < chickenCount; i++){
-            chickens[i].x = chickens[i].x + (direction * chickenSpeed);
+            chickens[i].x = chickens[i].x + (direction * chickens[i].speed);
         }
         
+        // Attack collisions
         for(int i = 0; i < maxAttacks; i++){
             for(int j = 0; j < chickenCount; j++){
-                if(checkCollision(attacks[i].x, attacks[i].y, attackSize, chickens[j].x, chickens[j].y, chickenSize)){
+                if(checkCollision(attacks[i].x, attacks[i].y, attacks[i].width, attacks[i].height, 
+                                    chickens[j].x, chickens[j].y, chickens[j].width, chickens[j].height)){
                     attacks[i].x = -100;
                     attacks[i].y = -100;
-                    chickens[j].Health -=attackDamage;
-                    if(chickens[j].Health <= 0){
+                    chickens[j].health -= attacks[i].damage;
+                    if(chickens[j].health <= 0){
                         chickens[j].x = -200;
-                        chickens[y].x = -200;
+                        chickens[j].y = -200;
                     }
                     break;
                 }
             }
 
-            if(checkCollision(x, y, shipHeight, chickenAttacks[i].x, chickenAttacks[i].y, attackSize)){
-                health-=10;
+            if(checkCollision(SHIP.x, SHIP.y, SHIP.width, SHIP.width, 
+                                chickenAttacks[i].x, chickenAttacks[i].y, chickenAttacks[i].width, chickenAttacks[i].height)){
+                SHIP.health-=10;
                 chickenAttacks[i].x = - 50;
                 chickenAttacks[i].y = -50;
-                printf("DAMAAGE TAKEN! CURRENT HEALTH: %d\n", health);
+                printf("DAMAAGE TAKEN! CURRENT HEALTH: %d\n", SHIP.health);
             }
 
-            attacks[i].y -= attackSpeed;
-            chickenAttacks[i].y += chickenAttackSpeed;
+            attacks[i].y -= attacks[i].speed;
+            chickenAttacks[i].y += chickenAttacks[i].speed;
         }
 
         for(int i = 0; i < chickenCount; i++){
             int x = GetRandomValue(1, 10000);
             if(x == 500){
                 if(currentChickenAttack >= maxAttacks) currentChickenAttack = 0;
-                chickenAttacks[currentChickenAttack++] = {chickens[i].x, chickens[i].y};
+                chickenAttacks[currentChickenAttack].x = chickens[i].x;
+                chickenAttacks[currentChickenAttack].y = chickens[i].y;
+                currentChickenAttack++;
             }
         }
 
@@ -141,23 +198,23 @@ int main(void)
             ClearBackground(BLACK);
             drawFPS();
             
-            DrawTextureEx(shipTex, (Vector2){(float)x - (shipWidth/2), (float)y - (shipHeight/2)}, 0.0f, 0.5f, WHITE);
+            DrawTextureEx(SHIP.texture, (Vector2){(float)SHIP.x, (float)SHIP.y}, 0.0f, SHIP.scale, WHITE);
 
             for (int i = 0; i < maxAttacks; i++){
                 DrawRectangle(attacks[i].x, attacks[i].y, attackSize, attackSize, RED);
-                DrawRectangle(chickenAttacks[i].x, chickenAttacks[i].y, attackSize, attackSize, RED);
+                DrawTextureEx(eggTex, (Vector2){chickenAttacks[i].x, chickenAttacks[i].y}, 0.0f, chickenAttacks[i].scale, WHITE);
             }
 
             for(int i = 0; i < chickenCount; i++){
-                if(chickens[i].Health > 0){
+                if(chickens[i].health > 0){
                     victory = false;
-                    DrawRectangle(chickens[i].x, chickens[i].y, chickenSize, chickenSize, RED);
+                    DrawTextureEx(chickenTex, (Vector2){chickens[i].x, chickens[i].y}, 0.0f, chickens[i].scale, WHITE);
                 }
             }
 
-            DrawRectangle(0, screenHeight-20, ((health/100) * screenWidth), 20, RED);
+            DrawRectangle(0, screenHeight-20, ((SHIP.health % 100) * screenWidth * 0.01f), 20, RED);
 
-            if(health <= 0) DrawRectangle(screenHeight/2, screenWidth/2, 600, 200, RED);
+            if(SHIP.health <= 0) DrawRectangle(screenHeight/2, screenWidth/2, 600, 200, RED);
 
             if(victory) DrawRectangle(screenHeight/2, screenWidth/2, 600, 200, BLUE);
             
